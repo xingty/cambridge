@@ -76,7 +76,7 @@ func query(start, end int32) (string, error) {
 	}
 	defer file.Close()
 
-	length := end - start
+	length := end - start + 1
 	buffer := make([]byte, length)
 
 	_, err = file.Seek(int64(start), 0)
