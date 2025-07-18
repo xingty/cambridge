@@ -1,0 +1,15 @@
+build/bin
+.idea
+.vscode
+/test
+dist
+
+*.DS_Store
+.AppleDouble
+.LSOverride
+
+.directory
+.Trash-*
+.nfs*
+
+cambridge
