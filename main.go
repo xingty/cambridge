@@ -10,8 +10,6 @@ import (
 	"strings"
 )
 
-var dictBasePath string = ""
-
 type Index struct {
 	start int32
 	end   int32
@@ -22,8 +20,9 @@ func (idx Index) Stringer() string {
 }
 
 var indexing map[string]Index
+var dictFile *os.File
 
-func readIndex() []string {
+func readIndex(dictBasePath string) []string {
 	binPath := filepath.Join(dictBasePath, "index.bin")
 	data, err := os.ReadFile(binPath)
 	if err != nil {
@@ -33,9 +32,9 @@ func readIndex() []string {
 	return strings.Split(string(data), "\n")
 }
 
-func loadIndex() {
+func loadIndex(dictBasePath string) {
 	indexing = make(map[string]Index)
-	lines := readIndex()
+	lines := readIndex(dictBasePath)
 	for _, line := range lines {
 		segs := strings.Split(line, "|")
 		if len(segs) != 3 {
@@ -64,35 +63,23 @@ func loadIndex() {
 	}
 }
 
-func query(start, end int32) (string, error) {
+func openDict(dictBasePath string) {
 	dictPath := filepath.Join(dictBasePath, "dict.bin")
-	if _, err := os.Stat(dictPath); os.IsNotExist(err) {
-		return "", err
-	}
-
-	file, err := os.Open(dictPath)
+	var err error
+	dictFile, err = os.Open(dictPath)
 	if err != nil {
-		return "", err
+		panic(err)
 	}
-	defer file.Close()
+}
 
+func query(start, end int32) (string, error) {
 	length := end - start + 1
 	buffer := make([]byte, length)
 
-	n, err := file.ReadAt(buffer, int64(start))
+	n, err := dictFile.ReadAt(buffer, int64(start))
 	if n != int(length) || err != nil {
 		return "", fmt.Errorf("failed to read from file: %v", err)
 	}
-
-	// _, err = file.Seek(int64(start), 0)
-	// if err != nil {
-	// 	return "", err
-	// }
-
-	// _, err = file.Read(buffer)
-	// if err != nil {
-	// 	return "", err
-	// }
 
 	return string(buffer), nil
 }
@@ -136,6 +123,7 @@ func startServer(addr string) {
 func main() {
 	var port int
 	var ipAddr string
+	var dictBasePath string
 
 	flag.IntVar(&port, "port", 8010, "port number")
 	flag.StringVar(&ipAddr, "addr", "127.0.0.1", "ip address")
@@ -143,7 +131,10 @@ func main() {
 
 	flag.Parse()
 
-	loadIndex()
+	loadIndex(dictBasePath)
+	openDict(dictBasePath)
 	addr := fmt.Sprintf("%s:%d", ipAddr, port)
 	startServer(addr)
+
+	defer dictFile.Close()
 }
