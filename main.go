@@ -79,15 +79,20 @@ func query(start, end int32) (string, error) {
 	length := end - start + 1
 	buffer := make([]byte, length)
 
-	_, err = file.Seek(int64(start), 0)
-	if err != nil {
-		return "", err
+	n, err := file.ReadAt(buffer, int64(start))
+	if n != int(length) || err != nil {
+		return "", fmt.Errorf("failed to read from file: %v", err)
 	}
 
-	_, err = file.Read(buffer)
-	if err != nil {
-		return "", err
-	}
+	// _, err = file.Seek(int64(start), 0)
+	// if err != nil {
+	// 	return "", err
+	// }
+
+	// _, err = file.Read(buffer)
+	// if err != nil {
+	// 	return "", err
+	// }
 
 	return string(buffer), nil
 }
